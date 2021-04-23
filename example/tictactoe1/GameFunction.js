@@ -50,12 +50,8 @@ GameFunction.isGameOver = (store) => {
   return answer;
 };
 
-GameFunction.phaseKeys = (/* state */) => ["a"];
-
-GameFunction.stepKeys = (/* state */) => ["one"];
-
-GameFunction.stepFunction = {
-  one: (store) => {
+GameFunction.stepFunction = (store) =>
+  new Promise((resolve) => {
     const playerId = Selector.currentPlayerId(store.getState());
     const { board } = store.getState();
 
@@ -76,8 +72,8 @@ GameFunction.stepFunction = {
     }
 
     printBoard(store.getState().board);
-  },
-};
+    resolve();
+  });
 
 Object.freeze(GameFunction);
 

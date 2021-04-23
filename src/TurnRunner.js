@@ -2,9 +2,10 @@ import StepRunner from "./StepRunner.js";
 
 const TurnRunner = {};
 
-TurnRunner.execute = (props, store) =>
+TurnRunner.execute = (props, store, engine = { stepRunner: StepRunner }) =>
   new Promise((resolve) => {
     const { actionCreator, gameFunction, selector } = props;
+    const { stepRunner } = engine;
 
     if (!actionCreator) {
       throw new Error("actionCreator undefined");
@@ -20,7 +21,7 @@ TurnRunner.execute = (props, store) =>
       const reduceFunction = (promise, playerId) =>
         promise.then(() => {
           store.dispatch(actionCreator.setCurrentPlayer(playerId));
-          return StepRunner.execute(props, store);
+          return stepRunner.execute(props, store, engine);
         });
       R.reduce(reduceFunction, Promise.resolve(), playerIds).then(() => {
         store.dispatch(actionCreator.setCurrentPlayer(undefined));

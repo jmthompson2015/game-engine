@@ -1,4 +1,6 @@
 import PhaseRunner from "./PhaseRunner.js";
+import StepRunner from "./StepRunner.js";
+import TurnRunner from "./TurnRunner.js";
 
 const RoundRunner = {};
 
@@ -21,14 +23,18 @@ const advanceRound = (props, store) => {
   store.dispatch(actionCreator.setCurrentPlayer(null));
 };
 
-RoundRunner.executeRounds = (props, store, resolve) => {
+RoundRunner.executeRounds = (props, store, engine, resolve) => {
   const { gameFunction, roundLimit, selector } = props;
+  const { phaseRunner } = engine;
 
   if (!roundLimit) {
     throw new Error("roundLimit undefined");
   }
   if (!selector) {
     throw new Error("selector undefined");
+  }
+  if (!phaseRunner) {
+    throw new Error("phaseRunner undefined");
   }
 
   const round = selector.currentRound(store.getState());
@@ -38,13 +44,21 @@ RoundRunner.executeRounds = (props, store, resolve) => {
   } else {
     advanceRound(props, store);
 
-    PhaseRunner.execute(props, store).then(() => {
-      RoundRunner.executeRounds(props, store, resolve);
+    phaseRunner.execute(props, store, engine).then(() => {
+      RoundRunner.executeRounds(props, store, engine, resolve);
     });
   }
 };
 
-RoundRunner.execute = (props, store) =>
+RoundRunner.execute = (
+  props,
+  store,
+  engine = {
+    phaseRunner: PhaseRunner,
+    turnRunner: TurnRunner,
+    stepRunner: StepRunner,
+  }
+) =>
   new Promise((resolve) => {
     const { gameFunction } = props;
 
@@ -55,7 +69,7 @@ RoundRunner.execute = (props, store) =>
     if (gameFunction.isGameOver(store)) {
       resolve();
     } else {
-      RoundRunner.executeRounds(props, store, resolve);
+      RoundRunner.executeRounds(props, store, engine, resolve);
     }
   });
 

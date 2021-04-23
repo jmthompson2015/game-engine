@@ -37,9 +37,10 @@
 
   const TurnRunner = {};
 
-  TurnRunner.execute = (props, store) =>
+  TurnRunner.execute = (props, store, engine = { stepRunner: StepRunner }) =>
     new Promise((resolve) => {
       const { actionCreator, gameFunction, selector } = props;
+      const { stepRunner } = engine;
 
       if (!actionCreator) {
         throw new Error("actionCreator undefined");
@@ -55,7 +56,7 @@
         const reduceFunction = (promise, playerId) =>
           promise.then(() => {
             store.dispatch(actionCreator.setCurrentPlayer(playerId));
-            return StepRunner.execute(props, store);
+            return stepRunner.execute(props, store, engine);
           });
         R.reduce(reduceFunction, Promise.resolve(), playerIds).then(() => {
           store.dispatch(actionCreator.setCurrentPlayer(undefined));
@@ -68,9 +69,14 @@
 
   const PhaseRunner = {};
 
-  PhaseRunner.execute = (props, store) =>
+  PhaseRunner.execute = (
+    props,
+    store,
+    engine = { turnRunner: TurnRunner, stepRunner: StepRunner }
+  ) =>
     new Promise((resolve) => {
       const { actionCreator, gameFunction } = props;
+      const { turnRunner } = engine;
 
       if (!actionCreator) {
         throw new Error("actionCreator undefined");
@@ -86,7 +92,7 @@
         const reduceFunction = (promise, phaseKey) =>
           promise.then(() => {
             store.dispatch(actionCreator.setCurrentPhase(phaseKey));
-            return TurnRunner.execute(props, store);
+            return turnRunner.execute(props, store, engine);
           });
         R.reduce(reduceFunction, Promise.resolve(), phaseKeys).then(() => {
           store.dispatch(actionCreator.setCurrentPhase(undefined));
@@ -118,14 +124,18 @@
     store.dispatch(actionCreator.setCurrentPlayer(null));
   };
 
-  RoundRunner.executeRounds = (props, store, resolve) => {
+  RoundRunner.executeRounds = (props, store, engine, resolve) => {
     const { gameFunction, roundLimit, selector } = props;
+    const { phaseRunner } = engine;
 
     if (!roundLimit) {
       throw new Error("roundLimit undefined");
     }
     if (!selector) {
       throw new Error("selector undefined");
+    }
+    if (!phaseRunner) {
+      throw new Error("phaseRunner undefined");
     }
 
     const round = selector.currentRound(store.getState());
@@ -135,13 +145,21 @@
     } else {
       advanceRound(props, store);
 
-      PhaseRunner.execute(props, store).then(() => {
-        RoundRunner.executeRounds(props, store, resolve);
+      phaseRunner.execute(props, store, engine).then(() => {
+        RoundRunner.executeRounds(props, store, engine, resolve);
       });
     }
   };
 
-  RoundRunner.execute = (props, store) =>
+  RoundRunner.execute = (
+    props,
+    store,
+    engine = {
+      phaseRunner: PhaseRunner,
+      turnRunner: TurnRunner,
+      stepRunner: StepRunner,
+    }
+  ) =>
     new Promise((resolve) => {
       const { gameFunction } = props;
 
@@ -152,15 +170,78 @@
       if (gameFunction.isGameOver(store)) {
         resolve();
       } else {
-        RoundRunner.executeRounds(props, store, resolve);
+        RoundRunner.executeRounds(props, store, engine, resolve);
       }
     });
 
   Object.freeze(RoundRunner);
 
+  const SinglePhaseRunner = {};
+
+  SinglePhaseRunner.execute = (
+    props,
+    store,
+    engine = { turnRunner: TurnRunner, stepRunner: StepRunner }
+  ) =>
+    new Promise((resolve) => {
+      const { actionCreator, gameFunction } = props;
+      const { turnRunner } = engine;
+
+      if (!actionCreator) {
+        throw new Error("actionCreator undefined");
+      }
+      if (!gameFunction) {
+        throw new Error("gameFunction undefined");
+      }
+
+      if (gameFunction.isGameOver(store)) {
+        resolve();
+      } else {
+        store.dispatch(actionCreator.setCurrentPhase("phase"));
+        turnRunner.execute(props, store, engine).then(() => {
+          store.dispatch(actionCreator.setCurrentPhase(undefined));
+          resolve();
+        });
+      }
+    });
+
+  Object.freeze(SinglePhaseRunner);
+
+  const SingleStepRunner = {};
+
+  SingleStepRunner.execute = (props, store) =>
+    new Promise((resolve) => {
+      const { actionCreator, gameFunction } = props;
+
+      if (!actionCreator) {
+        throw new Error("actionCreator undefined");
+      }
+      if (!gameFunction) {
+        throw new Error("gameFunction undefined");
+      }
+
+      if (gameFunction.isGameOver(store)) {
+        resolve();
+      } else {
+        store.dispatch(actionCreator.setCurrentStep("step"));
+        gameFunction.stepFunction(store).then(() => {
+          store.dispatch(actionCreator.setCurrentStep(undefined));
+          resolve();
+        });
+      }
+    });
+
+  Object.freeze(SingleStepRunner);
+
   const GameEngine = {};
 
   GameEngine.RoundRunner = RoundRunner;
+  GameEngine.PhaseRunner = PhaseRunner;
+  GameEngine.TurnRunner = TurnRunner;
+  GameEngine.StepRunner = StepRunner;
+
+  GameEngine.SinglePhaseRunner = SinglePhaseRunner;
+  GameEngine.SingleStepRunner = SingleStepRunner;
 
   Object.freeze(GameEngine);
 
