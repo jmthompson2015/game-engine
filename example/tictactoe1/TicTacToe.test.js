@@ -22,6 +22,7 @@ const createStore = () => {
   const store = Redux.createStore(Reducer.root);
   const players = createPlayers();
   store.dispatch(ActionCreator.setPlayers(players));
+  store.dispatch(ActionCreator.setCurrentPlayerOrder([1, 2]));
 
   return store;
 };

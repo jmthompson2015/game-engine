@@ -21,7 +21,7 @@ const Reducer = {
       return {
         currentRound: 0,
         currentPhaseKey: null,
-        currentPlayerOrder: null,
+        currentPlayerOrder: [],
         currentPlayerId: null,
         currentStepKey: null,
       };
@@ -115,7 +115,6 @@ TestData.selector = {
   currentPlayerId: (state) => state.currentPlayerId,
   currentPlayerOrder: (state) => state.currentPlayerOrder,
   currentStepKey: (state) => state.currentStepKey,
-  playersInOrder: (/* state */) => [1, 2],
 };
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -123,6 +122,7 @@ TestData.createStore = () => {
   const store = Redux.createStore(Reducer.root);
   const players = createPlayers();
   store.dispatch(TestData.actionCreator.setPlayers(players));
+  store.dispatch(TestData.actionCreator.setCurrentPlayerOrder([1, 2]));
 
   return store;
 };

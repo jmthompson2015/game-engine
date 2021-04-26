@@ -10,8 +10,6 @@ Selector.currentPlayerOrder = (state) => state.currentPlayerOrder;
 
 Selector.currentStepKey = (state) => state.currentStepKey;
 
-Selector.playersInOrder = (/* state */) => [1, 2];
-
 Object.freeze(Selector);
 
 export default Selector;

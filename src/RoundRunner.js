@@ -17,9 +17,6 @@ const advanceRound = (props, store) => {
   const newRound = selector.currentRound(store.getState()) + 1;
   store.dispatch(actionCreator.setCurrentRound(newRound));
   store.dispatch(actionCreator.setCurrentPhase(null));
-
-  const playerIds = selector.playersInOrder(store.getState());
-  store.dispatch(actionCreator.setCurrentPlayerOrder(playerIds));
   store.dispatch(actionCreator.setCurrentPlayer(null));
 };
 
