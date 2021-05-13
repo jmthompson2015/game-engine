@@ -3,6 +3,8 @@
 import SingleStepRunner from "./SingleStepRunner.js";
 import TestData from "./TestData.js";
 
+const { actionCreator, selector } = TestData;
+
 QUnit.module("SingleStepRunner");
 
 QUnit.test("execute()", (assert) => {
@@ -15,15 +17,12 @@ QUnit.test("execute()", (assert) => {
         resolve();
       }),
   };
-  const props = {
-    actionCreator: TestData.actionCreator,
-    gameFunction,
-  };
+  const props = { actionCreator, gameFunction };
   const store = TestData.createStore();
-  store.dispatch(TestData.actionCreator.setCurrentRound(1));
-  store.dispatch(TestData.actionCreator.setCurrentPhase("a"));
-  store.dispatch(TestData.actionCreator.setCurrentPlayerOrder([1, 2]));
-  store.dispatch(TestData.actionCreator.setCurrentPlayer(1));
+  store.dispatch(actionCreator.setCurrentRound(1));
+  store.dispatch(actionCreator.setCurrentPhase("a"));
+  store.dispatch(actionCreator.setCurrentPlayerOrder([1, 2]));
+  store.dispatch(actionCreator.setCurrentPlayer(1));
 
   // Run.
   const done = assert.async();
@@ -31,10 +30,10 @@ QUnit.test("execute()", (assert) => {
     assert.ok(true, "test resumed from async operation");
     // Verify.
     const state = store.getState();
-    assert.equal(TestData.selector.currentRound(state), 1);
-    assert.equal(TestData.selector.currentPhaseKey(state), "a");
-    assert.equal(TestData.selector.currentPlayerId(state), 1);
-    assert.equal(TestData.selector.currentStepKey(state), undefined);
+    assert.equal(selector.currentRound(state), 1);
+    assert.equal(selector.currentPhaseKey(state), "a");
+    assert.equal(selector.currentPlayerId(state), 1);
+    assert.equal(selector.currentStepKey(state), undefined);
     done();
   };
 

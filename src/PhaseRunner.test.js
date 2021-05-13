@@ -1,18 +1,16 @@
 import PhaseRunner from "./PhaseRunner.js";
 import TestData from "./TestData.js";
 
+const { actionCreator, gameFunction, selector } = TestData;
+
 QUnit.module("PhaseRunner");
 
 QUnit.test("execute()", (assert) => {
   // Setup.
-  const props = {
-    actionCreator: TestData.actionCreator,
-    gameFunction: TestData.gameFunction,
-    selector: TestData.selector,
-  };
+  const props = { actionCreator, gameFunction, selector };
   const store = TestData.createStore();
-  store.dispatch(TestData.actionCreator.setCurrentRound(1));
-  store.dispatch(TestData.actionCreator.setCurrentPlayerOrder([1, 2]));
+  store.dispatch(actionCreator.setCurrentRound(1));
+  store.dispatch(actionCreator.setCurrentPlayerOrder([1, 2]));
 
   // Run.
   const done = assert.async();
@@ -20,10 +18,10 @@ QUnit.test("execute()", (assert) => {
     assert.ok(true, "test resumed from async operation");
     // Verify.
     const state = store.getState();
-    assert.equal(TestData.selector.currentRound(state), 1);
-    assert.equal(TestData.selector.currentPhaseKey(state), undefined);
-    assert.equal(TestData.selector.currentPlayerId(state), undefined);
-    assert.equal(TestData.selector.currentStepKey(state), undefined);
+    assert.equal(selector.currentRound(state), 1);
+    assert.equal(selector.currentPhaseKey(state), undefined);
+    assert.equal(selector.currentPlayerId(state), undefined);
+    assert.equal(selector.currentStepKey(state), undefined);
     done();
   };
 
