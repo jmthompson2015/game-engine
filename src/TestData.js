@@ -97,6 +97,22 @@ TestData.actionCreator = {
 TestData.gameFunction = {
   isGameOver: (/* store */) => false,
   phaseKeys: (/* state */) => ["a", "b"],
+  phaseEnd: (store) => {
+    console.log(`phaseEnd() phaseKey = ${store.getState().currentPhaseKey}`);
+    return Promise.resolve();
+  },
+  phaseStart: (store) => {
+    console.log(`phaseStart() phaseKey = ${store.getState().currentPhaseKey}`);
+    return Promise.resolve();
+  },
+  roundEnd: (store) => {
+    console.log(`roundEnd() round = ${store.getState().currentRound}`);
+    return Promise.resolve();
+  },
+  roundStart: (store) => {
+    console.log(`roundStart() round = ${store.getState().currentRound}`);
+    return Promise.resolve();
+  },
   stepKeys: (/* state */) => ["one", "two"],
   stepFunction: {
     one: (/* store */) => {
@@ -105,6 +121,14 @@ TestData.gameFunction = {
     two: (/* store */) => {
       console.log("execute step two");
     },
+  },
+  turnEnd: (store) => {
+    console.log(`turnEnd() playerId = ${store.getState().currentPlayerId}`);
+    return Promise.resolve();
+  },
+  turnStart: (store) => {
+    console.log(`turnStart() playerId = ${store.getState().currentPlayerId}`);
+    return Promise.resolve();
   },
 };
 

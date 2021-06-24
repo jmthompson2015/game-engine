@@ -4,6 +4,8 @@ import TurnRunner from "./TurnRunner.js";
 
 const RoundRunner = {};
 
+const NULL_PROMISE = () => Promise.resolve();
+
 const advanceRound = (props, store) => {
   const { actionCreator, selector } = props;
 
@@ -22,15 +24,23 @@ const advanceRound = (props, store) => {
 
 RoundRunner.executeRounds = (props, store, engine, resolve) => {
   const { gameFunction, roundLimit, selector } = props;
-  const { phaseRunner } = engine;
 
-  if (!roundLimit) {
+  if (R.isNil(gameFunction)) {
+    throw new Error("gameFunction undefined");
+  }
+  if (R.isNil(roundLimit)) {
     throw new Error("roundLimit undefined");
   }
-  if (!selector) {
+  if (R.isNil(selector)) {
     throw new Error("selector undefined");
   }
-  if (!phaseRunner) {
+
+  const roundStart = gameFunction.roundStart || NULL_PROMISE;
+  const roundEnd = gameFunction.roundEnd || NULL_PROMISE;
+
+  const { phaseRunner } = engine;
+
+  if (R.isNil(phaseRunner)) {
     throw new Error("phaseRunner undefined");
   }
 
@@ -41,9 +51,12 @@ RoundRunner.executeRounds = (props, store, engine, resolve) => {
   } else {
     advanceRound(props, store);
 
-    phaseRunner.execute(props, store, engine).then(() => {
-      RoundRunner.executeRounds(props, store, engine, resolve);
-    });
+    roundStart(store)
+      .then(() => phaseRunner.execute(props, store, engine))
+      .then(() => roundEnd(store))
+      .then(() => {
+        RoundRunner.executeRounds(props, store, engine, resolve);
+      });
   }
 };
 

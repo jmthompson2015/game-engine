@@ -3,6 +3,8 @@ import TurnRunner from "./TurnRunner.js";
 
 const PhaseRunner = {};
 
+const NULL_PROMISE = () => Promise.resolve();
+
 PhaseRunner.execute = (
   props,
   store,
@@ -10,13 +12,21 @@ PhaseRunner.execute = (
 ) =>
   new Promise((resolve) => {
     const { actionCreator, gameFunction } = props;
-    const { turnRunner } = engine;
 
-    if (!actionCreator) {
+    if (R.isNil(actionCreator)) {
       throw new Error("actionCreator undefined");
     }
-    if (!gameFunction) {
+    if (R.isNil(gameFunction)) {
       throw new Error("gameFunction undefined");
+    }
+
+    const phaseStart = gameFunction.phaseStart || NULL_PROMISE;
+    const phaseEnd = gameFunction.phaseEnd || NULL_PROMISE;
+
+    const { turnRunner } = engine;
+
+    if (R.isNil(turnRunner)) {
+      throw new Error("turnRunner undefined");
     }
 
     if (gameFunction.isGameOver(store)) {
@@ -26,7 +36,9 @@ PhaseRunner.execute = (
       const reduceFunction = (promise, phaseKey) =>
         promise.then(() => {
           store.dispatch(actionCreator.setCurrentPhase(phaseKey));
-          return turnRunner.execute(props, store, engine);
+          return phaseStart(store)
+            .then(() => turnRunner.execute(props, store, engine))
+            .then(() => phaseEnd(store));
         });
       R.reduce(reduceFunction, Promise.resolve(), phaseKeys).then(() => {
         store.dispatch(actionCreator.setCurrentPhase(undefined));

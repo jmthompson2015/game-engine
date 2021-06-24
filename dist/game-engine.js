@@ -10,10 +10,10 @@
     new Promise((resolve) => {
       const { actionCreator, gameFunction } = props;
 
-      if (!actionCreator) {
+      if (R.isNil(actionCreator)) {
         throw new Error("actionCreator undefined");
       }
-      if (!gameFunction) {
+      if (R.isNil(gameFunction)) {
         throw new Error("gameFunction undefined");
       }
 
@@ -37,16 +37,29 @@
 
   const TurnRunner = {};
 
+  const NULL_PROMISE$2 = () => Promise.resolve();
+
   TurnRunner.execute = (props, store, engine = { stepRunner: StepRunner }) =>
     new Promise((resolve) => {
       const { actionCreator, gameFunction, selector } = props;
-      const { stepRunner } = engine;
 
-      if (!actionCreator) {
+      if (R.isNil(actionCreator)) {
         throw new Error("actionCreator undefined");
       }
-      if (!gameFunction) {
+      if (R.isNil(gameFunction)) {
         throw new Error("gameFunction undefined");
+      }
+      if (R.isNil(selector)) {
+        throw new Error("selector undefined");
+      }
+
+      const turnStart = gameFunction.turnStart || NULL_PROMISE$2;
+      const turnEnd = gameFunction.turnEnd || NULL_PROMISE$2;
+
+      const { stepRunner } = engine;
+
+      if (R.isNil(stepRunner)) {
+        throw new Error("stepRunner undefined");
       }
 
       if (gameFunction.isGameOver(store)) {
@@ -56,7 +69,9 @@
         const reduceFunction = (promise, playerId) =>
           promise.then(() => {
             store.dispatch(actionCreator.setCurrentPlayer(playerId));
-            return stepRunner.execute(props, store, engine);
+            return turnStart(store)
+              .then(() => stepRunner.execute(props, store, engine))
+              .then(() => turnEnd(store));
           });
         R.reduce(reduceFunction, Promise.resolve(), playerIds).then(() => {
           store.dispatch(actionCreator.setCurrentPlayer(undefined));
@@ -69,6 +84,8 @@
 
   const PhaseRunner = {};
 
+  const NULL_PROMISE$1 = () => Promise.resolve();
+
   PhaseRunner.execute = (
     props,
     store,
@@ -76,13 +93,21 @@
   ) =>
     new Promise((resolve) => {
       const { actionCreator, gameFunction } = props;
-      const { turnRunner } = engine;
 
-      if (!actionCreator) {
+      if (R.isNil(actionCreator)) {
         throw new Error("actionCreator undefined");
       }
-      if (!gameFunction) {
+      if (R.isNil(gameFunction)) {
         throw new Error("gameFunction undefined");
+      }
+
+      const phaseStart = gameFunction.phaseStart || NULL_PROMISE$1;
+      const phaseEnd = gameFunction.phaseEnd || NULL_PROMISE$1;
+
+      const { turnRunner } = engine;
+
+      if (R.isNil(turnRunner)) {
+        throw new Error("turnRunner undefined");
       }
 
       if (gameFunction.isGameOver(store)) {
@@ -92,7 +117,9 @@
         const reduceFunction = (promise, phaseKey) =>
           promise.then(() => {
             store.dispatch(actionCreator.setCurrentPhase(phaseKey));
-            return turnRunner.execute(props, store, engine);
+            return phaseStart(store)
+              .then(() => turnRunner.execute(props, store, engine))
+              .then(() => phaseEnd(store));
           });
         R.reduce(reduceFunction, Promise.resolve(), phaseKeys).then(() => {
           store.dispatch(actionCreator.setCurrentPhase(undefined));
@@ -104,6 +131,8 @@
   Object.freeze(PhaseRunner);
 
   const RoundRunner = {};
+
+  const NULL_PROMISE = () => Promise.resolve();
 
   const advanceRound = (props, store) => {
     const { actionCreator, selector } = props;
@@ -123,15 +152,23 @@
 
   RoundRunner.executeRounds = (props, store, engine, resolve) => {
     const { gameFunction, roundLimit, selector } = props;
-    const { phaseRunner } = engine;
 
-    if (!roundLimit) {
+    if (R.isNil(gameFunction)) {
+      throw new Error("gameFunction undefined");
+    }
+    if (R.isNil(roundLimit)) {
       throw new Error("roundLimit undefined");
     }
-    if (!selector) {
+    if (R.isNil(selector)) {
       throw new Error("selector undefined");
     }
-    if (!phaseRunner) {
+
+    const roundStart = gameFunction.roundStart || NULL_PROMISE;
+    const roundEnd = gameFunction.roundEnd || NULL_PROMISE;
+
+    const { phaseRunner } = engine;
+
+    if (R.isNil(phaseRunner)) {
       throw new Error("phaseRunner undefined");
     }
 
@@ -142,9 +179,12 @@
     } else {
       advanceRound(props, store);
 
-      phaseRunner.execute(props, store, engine).then(() => {
-        RoundRunner.executeRounds(props, store, engine, resolve);
-      });
+      roundStart(store)
+        .then(() => phaseRunner.execute(props, store, engine))
+        .then(() => roundEnd(store))
+        .then(() => {
+          RoundRunner.executeRounds(props, store, engine, resolve);
+        });
     }
   };
 
