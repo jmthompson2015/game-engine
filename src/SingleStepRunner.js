@@ -4,10 +4,10 @@ SingleStepRunner.execute = (props, store) =>
   new Promise((resolve) => {
     const { actionCreator, gameFunction } = props;
 
-    if (!actionCreator) {
+    if (R.isNil(actionCreator)) {
       throw new Error("actionCreator undefined");
     }
-    if (!gameFunction) {
+    if (R.isNil(gameFunction)) {
       throw new Error("gameFunction undefined");
     }
 
