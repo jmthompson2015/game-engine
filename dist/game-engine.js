@@ -37,7 +37,7 @@
 
   const TurnRunner = {};
 
-  const NULL_PROMISE$2 = () => Promise.resolve();
+  const NULL_PROMISE$3 = () => Promise.resolve();
 
   TurnRunner.execute = (props, store, engine = { stepRunner: StepRunner }) =>
     new Promise((resolve) => {
@@ -53,8 +53,8 @@
         throw new Error("selector undefined");
       }
 
-      const turnStart = gameFunction.turnStart || NULL_PROMISE$2;
-      const turnEnd = gameFunction.turnEnd || NULL_PROMISE$2;
+      const turnStart = gameFunction.turnStart || NULL_PROMISE$3;
+      const turnEnd = gameFunction.turnEnd || NULL_PROMISE$3;
 
       const { stepRunner } = engine;
 
@@ -84,7 +84,7 @@
 
   const PhaseRunner = {};
 
-  const NULL_PROMISE$1 = () => Promise.resolve();
+  const NULL_PROMISE$2 = () => Promise.resolve();
 
   PhaseRunner.execute = (
     props,
@@ -101,8 +101,8 @@
         throw new Error("gameFunction undefined");
       }
 
-      const phaseStart = gameFunction.phaseStart || NULL_PROMISE$1;
-      const phaseEnd = gameFunction.phaseEnd || NULL_PROMISE$1;
+      const phaseStart = gameFunction.phaseStart || NULL_PROMISE$2;
+      const phaseEnd = gameFunction.phaseEnd || NULL_PROMISE$2;
 
       const { turnRunner } = engine;
 
@@ -132,7 +132,7 @@
 
   const RoundRunner = {};
 
-  const NULL_PROMISE = () => Promise.resolve();
+  const NULL_PROMISE$1 = () => Promise.resolve();
 
   const advanceRound = (props, store) => {
     const { actionCreator, selector } = props;
@@ -163,8 +163,8 @@
       throw new Error("selector undefined");
     }
 
-    const roundStart = gameFunction.roundStart || NULL_PROMISE;
-    const roundEnd = gameFunction.roundEnd || NULL_PROMISE;
+    const roundStart = gameFunction.roundStart || NULL_PROMISE$1;
+    const roundEnd = gameFunction.roundEnd || NULL_PROMISE$1;
 
     const { phaseRunner } = engine;
 
@@ -215,6 +215,8 @@
 
   const SinglePhaseRunner = {};
 
+  const NULL_PROMISE = () => Promise.resolve();
+
   SinglePhaseRunner.execute = (
     props,
     store,
@@ -224,21 +226,27 @@
       const { actionCreator, gameFunction } = props;
       const { turnRunner } = engine;
 
-      if (!actionCreator) {
+      if (R.isNil(actionCreator)) {
         throw new Error("actionCreator undefined");
       }
-      if (!gameFunction) {
+      if (R.isNil(gameFunction)) {
         throw new Error("gameFunction undefined");
       }
+
+      const phaseStart = gameFunction.phaseStart || NULL_PROMISE;
+      const phaseEnd = gameFunction.phaseEnd || NULL_PROMISE;
 
       if (gameFunction.isGameOver(store)) {
         resolve();
       } else {
         store.dispatch(actionCreator.setCurrentPhase("phase"));
-        turnRunner.execute(props, store, engine).then(() => {
-          store.dispatch(actionCreator.setCurrentPhase(undefined));
-          resolve();
-        });
+        phaseStart(store)
+          .then(() => turnRunner.execute(props, store, engine))
+          .then(() => phaseEnd(store))
+          .then(() => {
+            store.dispatch(actionCreator.setCurrentPhase(undefined));
+            resolve();
+          });
       }
     });
 
@@ -250,10 +258,10 @@
     new Promise((resolve) => {
       const { actionCreator, gameFunction } = props;
 
-      if (!actionCreator) {
+      if (R.isNil(actionCreator)) {
         throw new Error("actionCreator undefined");
       }
-      if (!gameFunction) {
+      if (R.isNil(gameFunction)) {
         throw new Error("gameFunction undefined");
       }
 
